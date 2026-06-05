@@ -252,21 +252,22 @@ jobs:
 
     - name: Fix sched nohz compatibility
       run: |
-        if ! grep -q "nohz_flags" kernel/sched/sched.h; then
-            cat >> kernel/sched/sched.h << 'SCHED_EOF'
+        cat >> kernel/sched/sched.h << 'SCHED_EOF'
 
         /* KernelSU 4.14 compat stubs */
+        #ifndef NOHZ_BALANCE_KICK
         #define NOHZ_BALANCE_KICK 0
-        static unsigned long _nohz_flags_dummy;
+        #endif
+        #ifndef __KSU_NOHZ_FLAGS_DEFINED
+        #define __KSU_NOHZ_FLAGS_DEFINED
+        static unsigned long _ksu_nohz_flags_dummy;
         static inline unsigned long *nohz_flags(int cpu)
         {
-            return &_nohz_flags_dummy;
+            return &_ksu_nohz_flags_dummy;
         }
+        #endif
         SCHED_EOF
-            echo "Added nohz_flags stub to sched.h"
-        else
-            echo "nohz_flags already exists in sched.h"
-        fi
+        echo "Added nohz_flags stub to sched.h"
       working-directory: ${{ github.workspace }}/kernel_workspace/android-kernel
 
     - name: Build kernel
@@ -283,6 +284,7 @@ jobs:
         fi
         make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
         make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} security/selinux/
+        cp out/security/selinux/flask.h security/selinux/include/flask.h
         if [ ${{ env.ENABLE_CCACHE }} = true ]; then
             make -j$(nproc --all) CC="ccache clang" O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }}
         else
