@@ -284,7 +284,13 @@ jobs:
         fi
         make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
         make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} security/selinux/
-        cp out/security/selinux/flask.h security/selinux/include/flask.h
+        FLASK_H=$(find . -name flask.h -path "*/security/selinux/*" | head -1)
+        if [ -n "$FLASK_H" ]; then
+            cp "$FLASK_H" security/selinux/include/flask.h
+            echo "flask.h copied from $FLASK_H"
+        else
+            echo "WARNING: flask.h not found after security/selinux build"
+        fi
         if [ ${{ env.ENABLE_CCACHE }} = true ]; then
             make -j$(nproc --all) CC="ccache clang" O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }}
         else
