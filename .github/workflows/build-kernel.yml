@@ -245,6 +245,11 @@ jobs:
         key: build-kernel-${{ env.DEVICE }}${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}
         max-size: 2G
 
+    - name: Fix MTK printk conflict
+      run: |
+        sed -i 's/^static inline bool mt_get_uartlog_status/inline bool mt_get_uartlog_status/' drivers/misc/mediatek/include/mt-plat/mtk_printk_ctrl.h
+      working-directory: ${{ github.workspace }}/kernel_workspace/android-kernel
+
     - name: Build kernel
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
